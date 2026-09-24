@@ -22,6 +22,7 @@ import '../../models/input_model.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../../utils/image.dart';
+import '../soft_keyboard_input.dart';
 import '../widgets/dialog.dart';
 import '../widgets/custom_scale_widget.dart';
 
@@ -335,6 +336,25 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       // clipboard
       oldValue = '';
     }
+    final selection = _textController.value.selection;
+    final selectionOffset = selection.isValid &&
+            selection.isCollapsed &&
+            selection.extentOffset <= newValue.length
+        ? selection.extentOffset
+        : null;
+    var hadBackspaces = false;
+    if (canUseNonIOSSoftKeyboardDiff(
+        oldValue, newValue, initText, selectionOffset)) {
+      final edit = getNonIOSSoftKeyboardEdit(oldValue, newValue);
+      for (var i = 0; i < edit.backspaces; i++) {
+        inputModel.inputKey('VK_BACK');
+      }
+      if (edit.text.isEmpty) {
+        return;
+      }
+      hadBackspaces = edit.backspaces > 0;
+      newValue = '$oldValue${edit.text}';
+    }
     if (newValue.length == oldValue.length) {
       // ?
     } else if (newValue.length < oldValue.length) {
@@ -344,6 +364,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       final content = newValue.substring(oldValue.length);
       if (content.length > 1) {
         if (oldValue != '' &&
+            !hadBackspaces &&
             content.length == 2 &&
             (content == '""' ||
                 content == '()' ||
