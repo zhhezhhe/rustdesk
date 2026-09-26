@@ -2,6 +2,9 @@ name: i686 Sciter CI diagnostic
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/i686-ci-diagnostic
 
 permissions:
   contents: read
